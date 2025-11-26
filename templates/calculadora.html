@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora de Notas</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 34px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .topbar {
+            background: #ffffff;
+            padding: 20px 30px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .periodo-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        select {
+            font-size: 16px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+            cursor: pointer;
+        }
+
+        .logout button {
+            padding: 10px 15px;
+            border: none;
+            background: #e74c3c;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        .buttons {
+            margin-top: 20px;
+        }
+
+        .buttons button {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        .primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .ghost {
+            background: #ddd;
+        }
+
+        .resultado {
+            margin-top: 25px;
+            background: #dff0d8;
+            padding: 18px;
+            border-radius: 10px;
+            font-size: 22px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="topbar">
+
+        <div>
+            <h1>Calculadora de Notas</h1>
+            <div>{{ ciclo }} — Período {{ periodo }}</div>
+
+            {% if username %}
+            <div style="margin-top:8px;">Logado como: <strong>{{ username }}</strong></div>
+            {% endif %}
+        </div>
+
+        <div class="periodo-box">
+            <label>Selecionar Período</label>
+            <select onchange="mudarPeriodo(this.value)">
+                {% for p in range(1,10) %}
+                    <option value="{{ p }}" {% if p == periodo %}selected{% endif %}>{{ p }}º Período</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="logout">
+            <form action="/logout" method="post">
+                <button type="submit">Sair</button>
+            </form>
+        </div>
+
+    </div>
+
+    <div class="form-card">
+        <form id="calcForm" method="POST">
+
+            <div class="grid">
+                {% for chave, peso in componentes.items() %}
+                <div>
+                    <label>
+                        {% if chave == "tbl_f" %} TBL - Formativa ({{ peso }})
+                        {% elif chave == "tbl_s" %} TBL - Somativa ({{ peso }})
+                        {% elif chave == "lmf_f" %} LMF - Formativa ({{ peso }})
+                        {% elif chave == "lmf_s" %} LMF - Somativa ({{ peso }})
+                        {% elif chave == "tutor_f" %} Tutoria - Formativa ({{ peso }})
+                        {% elif chave == "tutor_s" %} Tutoria - Somativa ({{ peso }})
+                        {% elif chave == "nota_projeto" %} Projeto ({{ peso }})
+                        {% elif chave == "nota_pratica" %} Prática ({{ peso }})
+                        {% endif %}
+                    </label>
+
+                    <input type="number"
+                           step="0.01"
+                           min="0"
+                           max="10"
+                           name="{{ chave }}"
+                           value="{{ notas_salvas.get(chave, '') }}">
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="buttons">
+                <button type="submit" class="primary">Calcular</button>
+                <button type="button" onclick="limparNotas()">Limpar notas</button>
+            </div>
+        </form>
+
+        {% if media %}
+        <div id="resultado" class="resultado">
+            Média Final: <strong>{{ media }}</strong>
+        </div>
+        {% else %}
+        <div id="resultado" class="resultado" style="display:none;"></div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    // limpar sem valores voltarem
+    document.getElementById("btnClear").addEventListener("click", function () {
+        window.location.href = window.location.pathname;
+    });
+
+    // troca de período
+    function mudarPeriodo(p) {
+        window.location.href = "/calculadora?periodo=" + p;
+    }
+    
+    
+    function limparNotas() 
+    {
+        const inputs = document.querySelectorAll('input[type="number"]');
+        inputs.forEach(input => input.value = "");
+     }
+</script>
+
+</script>
+
+</body>
+</html>

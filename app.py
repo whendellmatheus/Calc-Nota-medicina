@@ -1,16 +1,15 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash
 import sqlite3
 
 app = Flask(__name__)
 app.secret_key = "troque_esta_chave_para_uma_mais_secreta"
 
-
-# conexão com sqlite
+# abre conexão com banco
 def get_db():
     return sqlite3.connect("database.db")
 
 
-# login
+# LOGIN
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -27,23 +26,50 @@ def login():
             session["username"] = username
             return redirect("/calculadora")
         else:
-            return "Login inválido!"
+            flash("Login inválido!")
+            return redirect("/")
 
     return render_template("login.html")
 
-# calculadora
+
+# CADASTRO
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        senha = request.form["senha"]
+
+        try:
+            con = get_db()
+            cur = con.cursor()
+            cur.execute("INSERT INTO usuarios (username, senha) VALUES (?, ?)",
+                        (username, senha))
+            con.commit()
+            con.close()
+
+            flash("Conta criada com sucesso!")
+            return redirect("/")
+
+        except sqlite3.IntegrityError:
+            flash("Usuário já existe!")
+            return redirect("/register")
+
+    return render_template("register.html")
+
+
+# CALCULADORA
 @app.route("/calculadora", methods=["GET", "POST"])
 def calculadora():
-    # pega período do select ou padrão = 1
-    periodo = request.args.get("periodo")
-    if periodo is None:
-        periodo = 1
+    if "username" not in session:
+        return redirect("/")
+
+    periodo = request.args.get("periodo", 1)
     periodo = int(periodo)
 
     media_final = None
     notas_salvas = {}
 
-    # pesos do ciclo básico
+    # ciclo básico
     if periodo <= 4:
         componentes = {
             "tbl_f": 0.08,
@@ -55,7 +81,7 @@ def calculadora():
         }
         ciclo = "Ciclo Básico"
 
-    # pesos do ciclo clínico
+    # ciclo clínico
     else:
         componentes = {
             "nota_projeto": 0.50,
@@ -63,14 +89,16 @@ def calculadora():
         }
         ciclo = "Ciclo Clínico"
 
-    # cálculo de média
+    # cálculo
     if request.method == "POST":
         try:
             media = 0
+
             for nome_nota, peso in componentes.items():
                 valor = request.form.get(nome_nota, "").strip()
                 if valor == "":
-                    raise KeyError("vazio")
+                    raise KeyError("Campo vazio")
+
                 nota = float(valor)
                 notas_salvas[nome_nota] = valor
                 media += nota * peso
@@ -91,13 +119,11 @@ def calculadora():
     )
 
 
-#Rota de Logout
-@app.route("/logout", methods=["GET", "POST"])
+# LOGOUT
+@app.route("/logout", methods=["POST"])
 def logout():
     session.clear()
     return redirect("/")
-
-
 
 
 if __name__ == "__main__":
